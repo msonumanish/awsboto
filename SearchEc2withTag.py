@@ -12,4 +12,6 @@ response = client.describe_instances(Filters=filters)
 for x in response["Reservations"]:
     #print(x["Instances"])
     for y in x["Instances"]:
-        print(y["PublicDnsName"])
+        print(y["InstanceId"])
+        print("Shuting down the ec2")
+        client.terminate_instances(InstanceIds=[y["InstanceId"]])
