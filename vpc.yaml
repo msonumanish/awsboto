@@ -1,0 +1,288 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: 
+  Template for creating VPC and two subnet, one is private and second is public
+
+Resources:
+  InternalVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: "10.0.0.0/16"
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Project
+          Value: Internal
+        - Key: Name
+          Value: ProjectVPC
+  
+  BasicParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /app/network/internalvpcid
+      Type: String
+      Value: !Ref InternalVPC
+      Description: VPC ID for internal project
+      Tags:
+        Project: Internal
+
+  privatesubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: ap-south-1a
+      VpcId: !Ref InternalVPC
+      CidrBlock: "10.0.1.0/24"
+      MapPublicIpOnLaunch: False
+      Tags:
+        - Key: Project
+          Value: Internal
+        - Key: Name
+          Value: privatesubnet1a
+
+
+  privatesubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: ap-south-1b
+      VpcId: !Ref InternalVPC
+      CidrBlock: "10.0.2.0/24"
+      MapPublicIpOnLaunch: False
+      Tags:
+        - Key: Project
+          Value: Internal
+        - Key: Name
+          Value: privatesubnet1b
+
+  privatesubnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: ap-south-1c
+      VpcId: !Ref InternalVPC
+      CidrBlock: "10.0.3.0/24"
+      MapPublicIpOnLaunch: False
+      Tags:
+        - Key: Project
+          Value: Internal
+        - Key: Name
+          Value: privatesubnet1c
+
+  publicsubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: ap-south-1a
+      VpcId: !Ref InternalVPC
+      CidrBlock: "10.0.4.0/24"
+      MapPublicIpOnLaunch: True
+      Tags:
+        - Key: Project
+          Value: Internal
+        - Key: Name
+          Value: publicsubnet1a
+
+
+  publicsubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: ap-south-1b
+      VpcId: !Ref InternalVPC
+      CidrBlock: "10.0.5.0/24"
+      MapPublicIpOnLaunch: True
+      Tags:
+        - Key: Project
+          Value: Internal
+        - Key: Name
+          Value: publicsubnet1b
+
+  publicsubnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: ap-south-1c
+      VpcId: !Ref InternalVPC
+      CidrBlock: "10.0.6.0/24"
+      MapPublicIpOnLaunch: True
+      Tags:
+        - Key: Project
+          Value: Internal
+        - Key: Name
+          Value: publicsubnet1c
+
+  privatesub1a:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /app/network/private/subnet1a
+      Type: String
+      Value: !Ref privatesubnet1
+      Description: subnet 1a for internal id
+      Tags:
+        Project: Internal
+
+  privatesub1b:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /app/network/private/subnet1b
+      Type: String
+      Value: !Ref privatesubnet2
+      Description: subnet 2a for internal id
+      Tags:
+        Project: Internal
+
+  privatesub1c:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /app/network/private/subnet1c
+      Type: String
+      Value: !Ref privatesubnet3
+      Description: subnet 3a for internal id
+      Tags:
+        Project: Internal
+  
+  pubsubnet1:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /app/network/public/subnet1a
+      Type: String
+      Value: !Ref publicsubnet1
+      Description: subnet 1a for internal id
+      Tags:
+        Project: Internal
+
+  pubsubnet2:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /app/network/public/subnet1b
+      Type: String
+      Value: !Ref publicsubnet2
+      Description: subnet 2a for internal id
+      Tags:
+        Project: Internal
+
+
+  pubsubnet3:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /app/network/public/subnet1c
+      Type: String
+      Value: !Ref publicsubnet3
+      Description: subnet 3a for internal id
+      Tags:
+        Project: Internal
+
+# Create Internet Gateway that will be attached to Project VPC
+  projectIGW:
+    Type: AWS::EC2::InternetGateway
+    Properties: 
+      Tags:
+        - Key: Project
+          Value: Internal
+        - Key: Name
+          Value: projectInternal  IGW
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref InternalVPC
+      InternetGatewayId: !Ref projectIGW
+  
+  # Create route  for public subnet for internal project
+  projectRoutePrivate:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref InternalVPC
+      Tags:
+        - Key: Name
+          Value: PublicProjectRoute
+        - Key: Project
+          Value: Internal
+  
+  routetoIGW:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref projectRoutePrivate
+      DestinationCidrBlock: "0.0.0.0/0"
+      GatewayId: !Ref projectIGW
+
+  routeTableAssocName1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref publicsubnet1
+      RouteTableId: !Ref projectRoutePrivate
+
+  routeTableAssocName2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref publicsubnet2
+      RouteTableId: !Ref projectRoutePrivate
+
+  routeTableAssocName3:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref publicsubnet3
+      RouteTableId: !Ref projectRoutePrivate
+  
+  corePublicSecurity:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: sgcorepublic
+      GroupDescription: core security group
+      VpcId: !Ref InternalVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: corePublicSecurity
+          Key: Project
+          Value: Internal
+
+  corePrivateSecurity:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: sgcoreprivate
+      GroupDescription: core private security group
+      VpcId: !Ref InternalVPC
+      Tags:
+        - Key: Name
+          Value: CoreSecurity
+          Key: Project
+          Value: Internal
+  
+  privateSSHIngress:
+   Type: 'AWS::EC2::SecurityGroupIngress'
+   Properties:
+      GroupId: !Ref corePrivateSecurity
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      SourceSecurityGroupId: !GetAtt corePrivateSecurity.GroupId
+
+  privateWebIngress:
+   Type: 'AWS::EC2::SecurityGroupIngress'
+   Properties:
+      GroupId: !Ref corePrivateSecurity
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
+      SourceSecurityGroupId: !GetAtt corePrivateSecurity.GroupId
+
+# Create a natgateway to attached to the private ( currently will be doing manual)
+# replace this will combination of lambda and find the default route table
+
+  natGatewayInstance:
+    Type: AWS::EC2::Instance
+    DependsOn: publicsubnet3
+    Properties:
+      KeyName: winserver
+      ImageId: ami-00999044593c895de
+      InstanceType: t2.micro
+      SubnetId: !Ref publicsubnet3
+      SecurityGroupIds:
+        - !Ref corePublicSecurity
+      SourceDestCheck: false
+      Tags:
+        - Key: Name
+          Value: NatGateWay
