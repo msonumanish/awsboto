@@ -9,6 +9,7 @@ Resources:
     Properties:
       CidrBlock: "10.0.0.0/16"
       EnableDnsSupport: true
+      EnableDnsHostnames: true
       InstanceTenancy: default
       Tags:
         - Key: Project
@@ -238,6 +239,17 @@ Resources:
           Value: corePublicSecurity
           Key: Project
           Value: Internal
+  
+  corePubSubSecurity:
+    Type: AWS::SSM::Parameter
+    DependsOn: corePublicSecurity
+    Properties:
+      Name: /app/network/security/corepublic
+      Type: String
+      Value: !Ref corePublicSecurity
+      Description: core secutity group for public subnet
+      Tags:
+        Project: Internal
 
   corePrivateSecurity:
     Type: AWS::EC2::SecurityGroup
@@ -250,6 +262,17 @@ Resources:
           Value: CoreSecurity
           Key: Project
           Value: Internal
+
+  corePriSubSecurity:
+    Type: AWS::SSM::Parameter
+    DependsOn: corePrivateSecurity
+    Properties:
+      Name: /app/network/security/coreprivate
+      Type: String
+      Value: !Ref corePrivateSecurity
+      Description: core secutity group for private subnet
+      Tags:
+        Project: Internal
   
   privateSSHIngress:
    Type: 'AWS::EC2::SecurityGroupIngress'
@@ -258,7 +281,7 @@ Resources:
       IpProtocol: tcp
       FromPort: 80
       ToPort: 80
-      SourceSecurityGroupId: !GetAtt corePrivateSecurity.GroupId
+      SourceSecurityGroupId: !GetAtt corePublicSecurity.GroupId
 
   privateWebIngress:
    Type: 'AWS::EC2::SecurityGroupIngress'
@@ -267,19 +290,19 @@ Resources:
       IpProtocol: tcp
       FromPort: 22
       ToPort: 22
-      SourceSecurityGroupId: !GetAtt corePrivateSecurity.GroupId
+      SourceSecurityGroupId: !GetAtt corePublicSecurity.GroupId
 
 # Create a natgateway to attached to the private ( currently will be doing manual)
 # replace this will combination of lambda and find the default route table
 
   natGatewayInstance:
     Type: AWS::EC2::Instance
-    DependsOn: publicsubnet3
+    DependsOn: publicsubnet2
     Properties:
       KeyName: winserver
       ImageId: ami-00999044593c895de
       InstanceType: t2.micro
-      SubnetId: !Ref publicsubnet3
+      SubnetId: !Ref publicsubnet2
       SecurityGroupIds:
         - !Ref corePublicSecurity
       SourceDestCheck: false

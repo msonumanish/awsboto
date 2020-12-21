@@ -1,0 +1,283 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: 
+  Template for creating ALB and two target group
+
+# Create Security group that will be used by ALB
+
+Parameters:
+  VPCID:
+    Description: vpc id for project VPC
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /app/network/internalvpcid
+  
+  CorePrivateSecurityGroup:
+    Description: vpc id for project VPC
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /app/network/security/coreprivate
+  
+  # All Private Subnet
+  PrivateSub1a:
+    Description: private subnet 1a
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /app/network/private/subnet1a
+
+  PrivateSub1b:
+    Description: private subnet 1b
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /app/network/private/subnet1b
+
+  PrivateSub1c:
+    Description: private subnet 1c
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /app/network/private/subnet1c
+  
+  # All Public Subnet
+
+  PublicSub1a:
+    Description: public subnet 1a
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /app/network/public/subnet1a
+
+  PublicSub1b:
+    Description: public subnet 1b
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /app/network/public/subnet1b
+
+  PublicSub1c:
+    Description: public subnet 1c
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /app/network/public/subnet1c
+
+Resources:
+
+  amiImageID:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /app/ec2/imageid
+      Type: String
+      Value: ami-08f63db601b82ff5f
+      Description: Image id to be used
+      Tags:
+        Project: Internal
+
+  AlbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: albSecurityGrp 
+      GroupDescription: ALB security group
+      VpcId: !Ref VPCID
+      SecurityGroupIngress:
+        - IpProtocol: TCP
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: TCP
+          FromPort: 80
+          ToPort: 80
+          DestinationSecurityGroupId: !Ref CorePrivateSecurityGroup
+      Tags:
+        - Key: Project
+          Value: Internal
+          Key: Name
+          Value: ALBsecurityGroup
+
+# Adding incoming traffic from ALB to Ec2 in private subnet
+
+  InboundAlBinEC2:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref CorePrivateSecurityGroup
+      IpProtocol: TCP
+      FromPort: 80
+      ToPort: 80
+      SourceSecurityGroupId: !Ref AlbSecurityGroup
+  
+  # Create ALB
+
+  webALB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Scheme: internet-facing
+      Name: webALB
+      SecurityGroups:
+        - !Ref AlbSecurityGroup
+      Subnets:
+        - !Ref PublicSub1a
+        - !Ref PublicSub1c
+        - !Ref PublicSub1b
+      Tags:
+        - Key: Project
+          Value: Internal
+        - Key: Name
+          Value: webALB
+
+  webALBlistener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    DependsOn: webTargetGrpDefault
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref webTargetGrpDefault
+      LoadBalancerArn: !Ref webALB
+      Port: 80
+      Protocol: HTTP
+  
+  # userListener:
+  #   Type: AWS::ElasticLoadBalancingV2::ListenerRule
+  #   Properties:
+  #     Actions:
+  #       - Type: forward
+  #         TargetGroupArn: !Ref webTargetGrpUser
+  #     Conditions:
+  #       - Field: path-pattern
+  #         PathPatternConfig:
+  #           Values:
+  #             - /User
+  #     ListenerArn: !Ref webALBlistener
+  #     Priority: 1
+
+  
+  webTargetGrpDefault:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+   # DependsOn: privateWebServerDefault
+    Properties:
+      VpcId: !Ref VPCID
+      Name: webALBTargetDefault
+      Port: 80
+      TargetType: instance
+      Protocol: HTTP
+      HealthCheckEnabled: true
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /
+      HealthCheckPort: 80
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+  
+  # AutoScaling launch template
+  webASGLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: webASGLaunchTemplate
+      LaunchTemplateData:
+        ImageId: ami-08f63db601b82ff5f
+        InstanceType: t2.micro
+        KeyName: winserver
+        SecurityGroupIds:
+          - sg-0be4143d9883a57bf
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+            - Key: Name
+              Value: ASGprivate
+        UserData: !Base64 |
+          #!/bin/bash
+          # get admin privileges
+          sudo su
+          # install httpd (Linux 2 version)
+          yum update -y
+          yum install -y httpd.x86_64
+          systemctl start httpd.service
+          systemctl enable httpd.service
+          echo "Hello World from $(hostname -f)" > /var/www/html/index.html
+    
+  # Auto Scaling Group creation
+  webASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: simplewebASG
+      TargetGroupARNs: 
+        - !Ref webTargetGrpDefault
+      LaunchTemplate:
+        LaunchTemplateId: !Ref webASGLaunchTemplate
+        Version: !GetAtt webASGLaunchTemplate.LatestVersionNumber
+      VPCZoneIdentifier:
+        - !Ref PublicSub1a
+        - !Ref PublicSub1b
+        - !Ref PublicSub1c
+      HealthCheckType: ELB
+      HealthCheckGracePeriod: 60
+      MinSize: 1
+      MaxSize: 3
+      DesiredCapacity: 2
+      Tags:
+        - Key: Env
+          Value: byASG
+          PropagateAtLaunch: true
+        - Key: Purpose
+          Value: WebServerGroup
+          PropagateAtLaunch: false
+
+  # Add target tracking policy to ASG 
+  stepTrackingCPUusage:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AutoScalingGroupName: !Ref webASG
+      PolicyType: TargetTrackingScaling
+      TargetTrackingConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ASGAverageCPUUtilization
+        TargetValue: 40
+  
+  # Add step scaling policy
+      
+
+
+
+
+
+  
+
+
+  
+  # webTargetGrpUser:
+  #   Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  #   DependsOn: privateWebServerUser
+  #   Properties:
+  #     VpcId: !Ref VPCID
+  #     Name: webALBTargetUser
+  #     Port: 80
+  #     TargetType: instance
+  #     Targets:
+  #       - Id: !Ref privateWebServerUser 
+  #     Protocol: HTTP
+  #     HealthCheckEnabled: true
+  #     HealthCheckIntervalSeconds: 10
+  #     HealthCheckPath: /
+  #     HealthCheckPort: 80
+  #     HealthCheckProtocol: HTTP
+  #     HealthCheckTimeoutSeconds: 5
+  #     HealthyThresholdCount: 2
+
+
+  # Ec2 web instance in private network 
+
+  # privateWebServerDefault:
+  #   Type: AWS::EC2::Instance
+  #   Properties:
+  #     KeyName: winserver
+  #     ImageId: ami-08f63db601b82ff5f
+  #     InstanceType: t2.micro
+  #     SubnetId: !Ref PrivateSub1a
+  #     SecurityGroupIds:
+  #       - !Ref CorePrivateSecurityGroup
+  #     UserData: !Base64 |
+  #       #!/bin/bash -ex
+  #       # put your script here
+  #       sudo su
+  #       yum update -y
+  #       yum install -y httpd.x86_64
+  #       systemctl start httpd.service
+  #       systemctl enable httpd.service
+  #       echo "Hello World from $(hostname -f) for default target group" > /var/www/html/index.html
+  #     Tags:
+  #       - Key: Name
+  #         Value: privateWebServerDefault
+  
+
+          
+
+
+  
