@@ -1,0 +1,80 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: 
+  Template for creating lambda inline function under VPC. This should be run post vpc creation
+
+# Create Security group that will be used by ALB
+# https://aws.nz/best-practice/cloudformation-package-deploy/
+
+Parameters:
+  VPCID:
+    Description: vpc id for project VPC
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /app/network/internalvpcid
+  
+  CorePrivateSecurityGroup:
+    Description: vpc id for project VPC
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /app/network/security/coreprivate
+  
+  # All Private Subnet
+  PrivateSub1a:
+    Description: private subnet 1a
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /app/network/private/subnet1a
+
+  PrivateSub1b:
+    Description: private subnet 1b
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /app/network/private/subnet1b
+
+  PrivateSub1c:
+    Description: private subnet 1c
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /app/network/private/subnet1c
+  
+  # All Public Subnet
+
+  PublicSub1a:
+    Description: public subnet 1a
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /app/network/public/subnet1a
+
+  PublicSub1b:
+    Description: public subnet 1b
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /app/network/public/subnet1b
+
+  PublicSub1c:
+    Description: public subnet 1c
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /app/network/public/subnet1c
+
+Resources:
+  TerminateAllEC2:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: This function searches all ec2 in vpc and terminate them
+      FunctionName: TerminateAllEC2
+      Handler: TerminateAllEc2.lambda_handler
+      MemorySize: 128
+      Role: arn:aws:iam::216013329119:role/service-role/TerminateEc2inProject-role-op6zbh35
+      Runtime: python3.6
+      Timeout: 60
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref CorePrivateSecurityGroup
+        SubnetIds:
+          - !Ref PrivateSub1b
+          - !Ref PrivateSub1a
+          - !Ref PrivateSub1c
+      Environment:
+        Variables:
+          Project: Internal # A map of key-value pairs that the Lambda function can access
+      Code: TerminateAllEc2.py
+      Tags:
+        - Key: Project
+          Value: Internal        
+
+
+  

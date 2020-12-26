@@ -1,0 +1,96 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: 
+  Template for creating mysql rds
+
+# Create Security group that will be used by ALB
+
+Parameters:
+  VPCID:
+    Description: vpc id for project VPC
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /app/network/internalvpcid
+  
+  CorePrivateSecurityGroup:
+    Description: vpc id for project VPC
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /app/network/security/coreprivate
+
+  CorePublicSecurityGroup:
+    Description: vpc id for project VPC
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /app/network/security/corepublic
+  
+  # All Private Subnet
+  PrivateSub1a:
+    Description: private subnet 1a
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /app/network/private/subnet1a
+
+  PrivateSub1b:
+    Description: private subnet 1b
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /app/network/private/subnet1b
+
+  PrivateSub1c:
+    Description: private subnet 1c
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /app/network/private/subnet1c
+  
+  # All Public Subnet
+
+  PublicSub1a:
+    Description: public subnet 1a
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /app/network/public/subnet1a
+
+  PublicSub1b:
+    Description: public subnet 1b
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /app/network/public/subnet1b
+
+  PublicSub1c:
+    Description: public subnet 1c
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /app/network/public/subnet1c
+
+Resources:
+
+  myDBSubnet:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: DB Subnet for RDS
+      DBSubnetGroupName: sqlRDSsubnet
+      SubnetIds:
+        - !Ref PrivateSub1c
+        - !Ref PrivateSub1b
+        - !Ref PrivateSub1a
+      Tags:
+        - Key: Project
+          Value: Internal
+
+  mysqlRDS:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: 20
+      AllowMajorVersionUpgrade: true
+      AutoMinorVersionUpgrade: true
+      DBSubnetGroupName: !Ref myDBSubnet
+      DBInstanceClass: db.t2.micro
+      DBInstanceIdentifier: measureitdev
+      DBName: measureitdev 
+      Engine: mysql
+      MasterUsername: admin
+      MasterUserPassword: admin1234
+      MultiAZ: false
+      PubliclyAccessible: false
+      StorageEncrypted: false
+      StorageType: standard
+      Tags:
+        - Key: Project
+          Value: Internal
+
+          
+
+
+  
