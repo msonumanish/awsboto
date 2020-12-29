@@ -4,7 +4,7 @@ import boto3
 client = boto3.client('ec2')
 
 filters =[
-    {'Name': 'tag:Name', 'Values': ['Boto3machine']}
+    {'Name': 'tag:Name', 'Values': ['NatInstance']}
 ]
 
 response = client.describe_instances(Filters=filters)

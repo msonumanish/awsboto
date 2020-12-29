@@ -13,10 +13,15 @@ Parameters:
     Default: /app/network/internalvpcid
   
   CorePrivateSecurityGroup:
-    Description: vpc id for project VPC
+    Description: security group for private
     Type: AWS::SSM::Parameter::Value<String>
     Default: /app/network/security/coreprivate
   
+  CorePublicSecurityGroup:
+    Description: security group for public
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /app/network/security/corepublic
+
   # All Private Subnet
   PrivateSub1a:
     Description: private subnet 1a
@@ -51,14 +56,73 @@ Parameters:
     Default: /app/network/public/subnet1c
 
 Resources:
+
+
+
+  lambdaForProject:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      RoleName: LambdaForProject
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      AssumeRolePolicyDocument: 
+        Version: 2012-10-17
+        Statement:
+            - Effect: Allow
+              Principal:
+                Service: 
+                  - lambda.amazonaws.com
+              Action:
+                - "sts:AssumeRole"
+
+  PolicyToManageEc2:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: Policy to stop start and terminate ec2
+      Roles:
+       - !Ref lambdaForProject
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement: 
+          Effect:
+            - Allow
+          Action: 
+            - ec2:DescribeInstances
+            - ec2:TerminateInstances
+            - ec2:StartInstances
+            - ec2:StopInstances
+          Resource: '*'
+
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: lambdaSecurity
+      GroupDescription: security group for lambda deployed under VPC
+      VpcId: !Ref VPCID
+      Tags:
+        - Key: Name
+          Value: lambdaSecurity
+
+  IngressRuleForLambda:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref LambdaSecurityGroup
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      SourceSecurityGroupId: !Ref CorePublicSecurityGroup
+
+    
   TerminateAllEC2:
     Type: AWS::Lambda::Function
     Properties:
       Description: This function searches all ec2 in vpc and terminate them
       FunctionName: TerminateAllEC2
-      Handler: TerminateAllEc2.lambda_handler
+      Handler: TerminateAllEc2.TerminateEc2
       MemorySize: 128
-      Role: arn:aws:iam::216013329119:role/service-role/TerminateEc2inProject-role-op6zbh35
+      Role: !GetAtt lambdaForProject.Arn
       Runtime: python3.6
       Timeout: 60
       VpcConfig:

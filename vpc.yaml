@@ -308,4 +308,6 @@ Resources:
       SourceDestCheck: false
       Tags:
         - Key: Name
-          Value: NatGateWay
+          Value: NatInstance
+
+

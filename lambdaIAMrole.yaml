@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: 
+  Template for creating IAM role that will be used by Lambda
+
+Resources:
+
+  # Create IAM role for Lambda execution under VPC
+  lambdaForProject:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      RoleName: LambdaForProject
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      AssumeRolePolicyDocument: 
+        Version: 2012-10-17
+        Statement:
+            - Effect: Allow
+              Principal:
+                Service: 
+                  - lambda.amazonaws.com
+              Action:
+                - "sts:AssumeRole"
