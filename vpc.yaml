@@ -237,7 +237,7 @@ Resources:
       Tags:
         - Key: Name
           Value: corePublicSecurity
-          Key: Project
+        - Key: Project
           Value: Internal
   
   corePubSubSecurity:
@@ -260,7 +260,7 @@ Resources:
       Tags:
         - Key: Name
           Value: CoreSecurity
-          Key: Project
+        - Key: Project
           Value: Internal
 
   corePriSubSecurity:
@@ -291,6 +291,16 @@ Resources:
       FromPort: 22
       ToPort: 22
       SourceSecurityGroupId: !GetAtt corePublicSecurity.GroupId
+  
+  httpsWebIngress:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref corePrivateSecurity
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      SourceSecurityGroupId: !GetAtt corePublicSecurity.GroupId
+
 
 # Create a natgateway to attached to the private ( currently will be doing manual)
 # replace this will combination of lambda and find the default route table

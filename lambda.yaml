@@ -80,20 +80,19 @@ Resources:
   PolicyToManageEc2:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: Policy to stop start and terminate ec2
+      PolicyName: PolicyToManageEc2
       Roles:
        - !Ref lambdaForProject
       PolicyDocument:
         Version: 2012-10-17
         Statement: 
-          Effect:
-            - Allow
-          Action: 
-            - ec2:DescribeInstances
-            - ec2:TerminateInstances
-            - ec2:StartInstances
-            - ec2:StopInstances
-          Resource: '*'
+          - Effect: Allow
+            Action: 
+              - ec2:DescribeInstances
+              - ec2:TerminateInstances
+              - ec2:StartInstances
+              - ec2:StopInstances
+            Resource: '*'
 
   LambdaSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -105,7 +104,7 @@ Resources:
         - Key: Name
           Value: lambdaSecurity
 
-  IngressRuleForLambda:
+  IngressRuleForLambdaPublic:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
       GroupId: !Ref LambdaSecurityGroup
@@ -113,6 +112,15 @@ Resources:
       FromPort: 443
       ToPort: 443
       SourceSecurityGroupId: !Ref CorePublicSecurityGroup
+  
+  IngressRuleForLambdaPrivate:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref LambdaSecurityGroup
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      SourceSecurityGroupId: !Ref CorePrivateSecurityGroup
 
     
   TerminateAllEC2:
@@ -127,7 +135,7 @@ Resources:
       Timeout: 60
       VpcConfig:
         SecurityGroupIds:
-          - !Ref CorePrivateSecurityGroup
+          - !Ref LambdaSecurityGroup
         SubnetIds:
           - !Ref PrivateSub1b
           - !Ref PrivateSub1a

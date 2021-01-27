@@ -56,7 +56,6 @@ Resources:
             - lambda.amazonaws.com
           Action:
           - sts:AssumeRole
-
   PolicyToManageEc2:
     Type: AWS::IAM::Policy
     Properties:
@@ -66,15 +65,13 @@ Resources:
       PolicyDocument:
         Version: 2012-10-17
         Statement:
-          - Effect: Allow
-            Action:
-              - ec2:DescribeInstances
-              - ec2:TerminateInstances
-              - ec2:StartInstances
-              - ec2:StopInstances
-            Resource: '*'
-
-
+        - Effect: Allow
+          Action:
+          - ec2:DescribeInstances
+          - ec2:TerminateInstances
+          - ec2:StartInstances
+          - ec2:StopInstances
+          Resource: '*'
   LambdaSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -85,7 +82,6 @@ Resources:
       Tags:
       - Key: Name
         Value: lambdaSecurity
-  
   IngressRuleForLambda:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
@@ -96,9 +92,6 @@ Resources:
       ToPort: 443
       SourceSecurityGroupId:
         Ref: CorePublicSecurityGroup
-
-
-  
   TerminateAllEC2:
     Type: AWS::Lambda::Function
     Properties:
@@ -114,7 +107,7 @@ Resources:
       Timeout: 60
       VpcConfig:
         SecurityGroupIds:
-        - Ref: CorePrivateSecurityGroup
+        - Ref: LambdaSecurityGroup
         SubnetIds:
         - Ref: PrivateSub1b
         - Ref: PrivateSub1a
@@ -124,7 +117,7 @@ Resources:
           Project: Internal
       Code:
         S3Bucket: cf-templates-16rs8regyw3rp-ap-south-1
-        S3Key: f3e4ba948a5d8c4b0977ceec96f8809f
+        S3Key: 163ec438470b266ea4544f12c8c67e7b
       Tags:
       - Key: Project
         Value: Internal
