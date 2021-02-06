@@ -1,8 +1,4 @@
-#-*- coding: utf-8 -*-
-__author__ = "Chirag Rathod (Srce Cde)"
-__license__ = "MIT"
-__email__ = "chiragr83@gmail.com"
-__maintainer__ = "Chirag Rathod (Srce Cde)"
+
 
 import time
 import json
