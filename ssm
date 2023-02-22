@@ -1,0 +1,76 @@
+import logging
+import os
+
+from crhelper import CfnResource
+import requests
+import boto3
+
+logger = logging.getLogger(__name__)
+helper = CfnResource(json_logging=False, log_level='DEBUG', boto_level='CRITICAL')
+
+ssm = boto3.client('ssm')
+try:
+    parameter = ssm.get_parameter(Name='/app/tableau/ids', WithDecryption=True)
+except Exception as exp:
+    logger.error(exp)
+
+def update_parameter(name, value):
+    response = ssm.put_parameter(
+        Name=name,
+        Overwrite=True,
+        Value=value,
+    )
+    return response
+
+def get_parameter(name):
+    response = ssm.get_parameter(
+        Name=name,
+        WithDecryption=True,
+    )
+    return response
+
+
+
+@helper.create
+def create(event, context):
+    '''
+    Function when create event is invoked. This function will add 
+    consumer aws account id in ssm paramater list
+    '''
+    logger.info("Got Create")
+
+    # '1234, 45335, 454356'
+    # we will get data from event.get('consumerid')
+    # list_param = parameter.split(',')
+    consumer_aws_id = event['ResourceProperties']['consumer_aws_id']
+    updated_param = parameter + ',' + consumer_aws_id
+
+    # update ssm parameter
+    response = update_parameter('/app/tableau/ids', updated_param)
+    if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+        logging.info('SSM paramater updated')
+
+        # get new SSM Paramters:
+        get_response = get_parameter('/app/tableau/ids')
+        consumer_aws_ids = get_response['Parameter']['Value']
+        formatted_consumer_ids = '"' + '","'.join(consumer_aws_ids.split(',')) + '"'
+        helper.Data['ssmvalue'] = formatted_consumer_ids
+    else:
+        logging.error('SSM paramater updated')
+        raise Exception('Failed to update SSM parameter')
+    physical_id = '/app/tableau/ids'
+    return parameter
+
+
+@helper.update
+def update(event, context):
+    logger.info("Got Update")
+    return parameter
+
+
+@helper.delete
+def delete(event, context):
+    logger.info("Got Delete")
+
+def handler(event, context):
+    helper(event, context)
