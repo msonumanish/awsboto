@@ -4,19 +4,22 @@
 FILE_EXT=".tsbak"
 LOG_FILE="delete_logs.txt"
 
+# Get current date and time in YYYY-MM-DD HH:MM:SS format
+DATETIME=$(date +"%Y-%m-%d %H:%M:%S")
+
 # Find files with the specified extension and older than 15 days
 OLD_FILES=$(find /apps/tabBackup -type f -name "*$FILE_EXT" -mtime +15)
 
 # Check if any files were found
 if [ -z "$OLD_FILES" ]; then
-  echo "No files found to delete." | tee -a "$LOG_FILE"
+  echo "$DATETIME: No files found to delete." | tee -a "$LOG_FILE"
   exit 0
 fi
 
 # Iterate over the list of old files and delete them
 for file in $OLD_FILES; do
   rm -f "$file"
-  echo "Deleted $file" | tee -a "$LOG_FILE"
+  echo "$DATETIME: Deleted $file" | tee -a "$LOG_FILE"
 done
 
-echo "All files older than 15 days with extension $FILE_EXT have been deleted." | tee -a "$LOG_FILE"
+echo "$DATETIME: All files older than 15 days with extension $FILE_EXT have been deleted." | tee -a "$LOG_FILE"
