@@ -1,0 +1,26 @@
+{
+  "StartAt": "ProvisionTableauProduct",
+  "States": {
+    "ProvisionTableauProduct": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::servicecatalog:createProvisionedProduct",
+      "Parameters": {
+        "ProductId": "YOUR_PRODUCT_ID",  // Replace with the actual Service Catalog product ID
+        "ProvisionedProductName": "tableau",
+        "ProvisioningParameters": [
+          {
+            "Key": "type",
+            "Value": "initial"
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          }
+        ]
+      },
+      "End": true
+    }
+  }
+}
