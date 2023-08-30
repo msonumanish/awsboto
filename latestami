@@ -1,0 +1,40 @@
+import boto3
+
+def get_latest_ami():
+    # Replace these with your AWS credentials or use IAM roles for Lambda
+    aws_access_key = 'YOUR_ACCESS_KEY'
+    aws_secret_key = 'YOUR_SECRET_KEY'
+    aws_region = 'us-west-1'  # Change this to your desired region
+    
+    ec2_client = boto3.client('ec2', region_name=aws_region, aws_access_key_id=aws_access_key, aws_secret_access_key=aws_secret_key)
+    
+    # Modify this filter according to your requirements
+    filters = [
+        {'Name': 'owner-id', 'Values': ['YOUR_ACCOUNT_ID']},
+        {'Name': 'state', 'Values': ['available']},
+        {'Name': 'architecture', 'Values': ['x86_64']},
+        {'Name': 'root-device-type', 'Values': ['ebs']},
+    ]
+    
+    images = ec2_client.describe_images(Filters=filters)
+    
+    if 'Images' in images and len(images['Images']) > 0:
+        images_sorted = sorted(images['Images'], key=lambda x: x['CreationDate'], reverse=True)
+        latest_ami_id = images_sorted[0]['ImageId']
+        return latest_ami_id
+    else:
+        return None
+
+def lambda_handler(event, context):
+    latest_ami = get_latest_ami()
+    
+    if latest_ami:
+        return {
+            'statusCode': 200,
+            'body': f'Latest AMI ID: {latest_ami}'
+        }
+    else:
+        return {
+            'statusCode': 404,
+            'body': 'No available AMIs found'
+        }
