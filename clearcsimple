@@ -1,0 +1,24 @@
+
+# Define the user profile directory for Chrome (change this to match your environment)
+$UserProfileDir = "C:\Users\<YourUsername>\AppData\Local\Google\Chrome\User Data\Default"
+
+# Close Chrome if it's running
+Stop-Process -Name "chrome" -Force -ErrorAction SilentlyContinue
+
+# Wait for Chrome to fully close (you may need to adjust the sleep duration)
+Start-Sleep -Seconds 5
+
+# Delete the Cookies file
+$CookiesFile = Join-Path -Path $UserProfileDir -ChildPath "Cookies"
+if (Test-Path -Path $CookiesFile) {
+    Remove-Item -Path $CookiesFile -Force
+    Write-Host "Cookies deleted successfully."
+}
+else {
+    Write-Host "Cookies file not found."
+}
+
+# Start Chrome
+Start-Process -FilePath "C:\Program Files\Google\Chrome\Application\chrome.exe" -NoNewWindow
+
+# Note: Replace "<YourUsername>" with the actual username and adjust the Chrome executable path as needed.
