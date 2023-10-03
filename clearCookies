@@ -1,0 +1,43 @@
+# Function to launch Chrome with the DevTools Protocol enabled
+function StartChromeWithDevTools {
+    $chromeExecutable = "C:\Program Files\Google\Chrome\Application\chrome.exe" # Update with your Chrome executable path
+    $chromeArgs = "--remote-debugging-port=9222"
+    Start-Process -FilePath $chromeExecutable -ArgumentList $chromeArgs
+}
+
+# Function to clear cookies in Chrome
+function ClearChromeCookies {
+    # Define the URL of the Chrome DevTools Protocol endpoint for the newly launched Chrome instance
+    $DevToolsUrl = "http://localhost:9222/json"
+    $sessionId = (Invoke-RestMethod -Uri $DevToolsUrl | Where-Object { $_.title -eq "New Tab" }).id
+    $clearCookiesCommand = @{
+        "cmd" = "Network.clearBrowserCookies"
+        "params" = @{
+            "sessionId" = $sessionId
+        }
+    }
+
+    $clearCookiesJson = $clearCookiesCommand | ConvertTo-Json
+    Invoke-RestMethod -Uri "$DevToolsUrl/session/$sessionId/command" -Method POST -Body $clearCookiesJson -ContentType "application/json"
+}
+
+# Function to close Chrome
+function CloseChrome {
+    Stop-Process -Name "chrome" -Force
+    Write-Host "Chrome has been closed."
+}
+
+# Start Chrome with DevTools Protocol enabled
+StartChromeWithDevTools
+
+# Wait for a few seconds to allow Chrome to start (adjust sleep duration as needed)
+Start-Sleep -Seconds 5
+
+# Clear cookies for the active Chrome instance
+ClearChromeCookies
+Write-Host "Cookies cleared for the active Chrome instance."
+
+# Close Chrome
+CloseChrome
+
+# Note: This script assumes a default Chrome installation path. Update $chromeExecutable with your Chrome executable path.
