@@ -1,0 +1,33 @@
+#!/bin/bash
+
+username="your_username"
+password="your_password"
+remote_host="your_remote_host"
+script_path="/path/to/your/script.sh"
+
+expect -c "
+spawn ssh $username@$remote_host
+expect {
+    \"assword:\" {
+        send \"$password\r\"
+        exp_continue
+    }
+    \"Permission denied\" {
+        puts \"Login failed. Check your credentials.\"
+        exit 1
+    }
+    \"~]$ \" {
+        # Successfully logged in
+        # Send the contents of the script file
+        set script_content [exec cat $script_path]
+        send \"\$script_content\n\"
+        send \"exit\n\"
+        interact
+    }
+    timeout {
+        puts \"Connection timeout. Check your network or remote host availability.\"
+        exit 1
+    }
+}
+puts \"Script executed remotely.\"
+"
