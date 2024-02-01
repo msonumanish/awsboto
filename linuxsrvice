@@ -1,0 +1,29 @@
+[Unit]
+Description=MyScript Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/path/to/scripts/myscript.sh
+
+[Install]
+WantedBy=default.target
+
+
+
+[Unit]
+Description=MyScript Timer
+
+[Timer]
+OnBootSec=5min
+Unit=myscript.service
+
+[Install]
+WantedBy=timers.target
+
+
+sudo systemctl daemon-reload
+sudo systemctl enable myscript.timer
+
+sudo systemctl start myscript.timer
+sudo systemctl status myscript.timer
