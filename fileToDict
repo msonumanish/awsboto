@@ -1,0 +1,23 @@
+# Initialize an empty dictionary to store siteURLs and userids
+site_user_dict = {}
+
+# Open the CSV file for reading
+with open('your_file.csv', 'r') as csvfile:
+    # Create a CSV reader object
+    csvreader = csv.DictReader(csvfile)
+    
+    # Iterate over each row in the CSV file
+    for row in csvreader:
+        # Extract siteURL and userid from the row
+        siteURL = row['siteURL']
+        userid = row['userid']
+        
+        # If the siteURL is not already in the dictionary, add it with an empty list
+        if siteURL not in site_user_dict:
+            site_user_dict[siteURL] = []
+        
+        # Append the userid to the list associated with the siteURL
+        site_user_dict[siteURL].append(userid)
+
+# Print the dictionary
+print(site_user_dict)
