@@ -21,3 +21,19 @@ with open('your_file.csv', 'r') as csvfile:
 
 # Print the dictionary
 print(site_user_dict)
+
+
+import pandas as pd
+
+# Read CSV into a DataFrame
+df = pd.read_csv('your_file.csv')
+
+# Search for rows where a specific column has a certain value
+specific_rows = df[df['column_name'] == 'desired_value']
+
+# Update values in a specific column based on conditions
+df.loc[df['column_name'] == 'desired_value', 'column_to_update'] = 'new_value'
+
+# Write DataFrame to CSV
+df.to_csv('updated_file.csv', index=False)
+
