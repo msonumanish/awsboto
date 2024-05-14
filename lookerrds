@@ -1,0 +1,64 @@
+import json
+import mysql.connector
+import boto3
+from botocore.exceptions import ClientError
+
+def get_secret(secret_name):
+    # Create a Secrets Manager client
+    session = boto3.session.Session()
+    client = session.client(service_name='secretsmanager')
+
+    try:
+        get_secret_value_response = client.get_secret_value(SecretId=secret_name)
+    except ClientError as e:
+        raise e
+    else:
+        if 'SecretString' in get_secret_value_response:
+            secret = get_secret_value_response['SecretString']
+            return json.loads(secret)
+        else:
+            decoded_binary_secret = base64.b64decode(get_secret_value_response['SecretBinary'])
+            return json.loads(decoded_binary_secret)
+
+def lambda_handler(event, context):
+    # The name of the secret to retrieve
+    secret_name = "YOUR_SECRET_NAME"  # Update this with your actual secret name
+
+    # Get the secret from Secrets Manager
+    secret = get_secret(secret_name)
+    
+    # List of SQL statements to execute
+    sql_statements = [
+        "CREATE TABLE IF NOT EXISTS example (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255))",
+        "INSERT INTO example (name) VALUES ('Sample Name')",
+        "SELECT * FROM example"
+    ]
+
+    # Connect to the database using credentials retrieved from Secrets Manager
+    try:
+        conn = mysql.connector.connect(
+            host=event['DBEndpoint'],
+            user=event['DBUser'],
+            password=secret['password'],  # Assuming the key in secret JSON is 'password'
+            database=event['DBName']
+        )
+        cursor = conn.cursor()
+        
+        # Execute each SQL statement
+        for sql in sql_statements:
+            cursor.execute(sql)
+            if sql.strip().upper().startswith("SELECT"):
+                result = cursor.fetchall()
+                print("Query Result:", result)  # Handle or log the SELECT query results
+        
+        conn.commit()
+        cursor.close()
+        return {
+            'statusCode': 200,
+            'body': json.dumps('All SQL scripts executed successfully!')
+        }
+    except Exception as e:
+        return {
+            'statusCode': 400,
+            'body': json.dumps(str(e))
+        }
