@@ -1,0 +1,42 @@
+<jdbc-dialect name="RedshiftDialect">
+    <!-- Functions Mapping -->
+    <function-map>
+        <!-- String functions -->
+        <function group='string' family='left' name='left'>
+            <formula>LEFT(%1, %2)</formula>
+        </function>
+        <function group='string' family='right' name='right'>
+            <formula>RIGHT(%1, %2)</formula>
+        </function>
+        <function group='string' family='find' name='find'>
+            <!-- Redshift uses POSITION, but FIND usually expects substring before position -->
+            <formula>POSITION(%1 IN %2)</formula>
+        </function>
+        <function group='string' family='mid' name='mid'>
+            <!-- Redshift uses SUBSTRING for MID -->
+            <formula>SUBSTRING(%1 FROM %2 FOR %3)</formula>
+        </function>
+        <function group='string' family='startswith' name='startswith'>
+            <!-- Use LIKE for STARTSWITH -->
+            <formula>(%1 LIKE %2 || '%')</formula>
+        </function>
+        <function group='string' family='endswith' name='endswith'>
+            <!-- Use LIKE for ENDSWITH -->
+            <formula>(%1 LIKE '%' || %2)</formula>
+        </function>
+
+        <!-- Date functions -->
+        <function group='date' family='datetime' name='current_datetime'>
+            <formula>NOW()</formula>
+        </function>
+        <function group='date' family='date' name='current_date'>
+            <formula>CURRENT_DATE</formula>
+        </function>
+        <function group='date' family='time' name='current_time'>
+            <formula>CURRENT_TIME</formula>
+        </function>
+
+        <!-- Numeric functions -->
+        <function group='numeric' family='round' name='round'>
+            <formula>ROUND(%1, %2)</formula>
+        </
