@@ -2,41 +2,35 @@
     <!-- Functions Mapping -->
     <function-map>
         <!-- String functions -->
-        <function group='string' family='left' name='left'>
+        <function group='string' family='left' name='left' return-type='string'>
             <formula>LEFT(%1, %2)</formula>
         </function>
-        <function group='string' family='right' name='right'>
+        <function group='string' family='right' name='right' return-type='string'>
             <formula>RIGHT(%1, %2)</formula>
         </function>
-        <function group='string' family='find' name='find'>
-            <!-- Redshift uses POSITION, but FIND usually expects substring before position -->
+        <function group='string' family='find' name='find' return-type='int'>
+            <!-- Redshift uses POSITION, which returns the position as integer -->
             <formula>POSITION(%1 IN %2)</formula>
         </function>
-        <function group='string' family='mid' name='mid'>
+        <function group='string' family='mid' name='mid' return-type='string'>
             <!-- Redshift uses SUBSTRING for MID -->
             <formula>SUBSTRING(%1 FROM %2 FOR %3)</formula>
         </function>
-        <function group='string' family='startswith' name='startswith'>
+        <function group='string' family='startswith' name='startswith' return-type='bool'>
             <!-- Use LIKE for STARTSWITH -->
             <formula>(%1 LIKE %2 || '%')</formula>
         </function>
-        <function group='string' family='endswith' name='endswith'>
+        <function group='string' family='endswith' name='endswith' return-type='bool'>
             <!-- Use LIKE for ENDSWITH -->
             <formula>(%1 LIKE '%' || %2)</formula>
         </function>
 
         <!-- Date functions -->
-        <function group='date' family='datetime' name='current_datetime'>
+        <function group='date' family='datetime' name='current_datetime' return-type='datetime'>
             <formula>NOW()</formula>
         </function>
-        <function group='date' family='date' name='current_date'>
+        <function group='date' family='date' name='current_date' return-type='date'>
             <formula>CURRENT_DATE</formula>
         </function>
-        <function group='date' family='time' name='current_time'>
-            <formula>CURRENT_TIME</formula>
-        </function>
-
-        <!-- Numeric functions -->
-        <function group='numeric' family='round' name='round'>
-            <formula>ROUND(%1, %2)</formula>
-        </
+        <function group='date' family='time' name='current_time' return-type='time'>
+            <formula>CURRENT_TIME
