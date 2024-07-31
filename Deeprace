@@ -1,0 +1,45 @@
+def reward_function(params):
+    '''
+    Example of rewarding the agent for following the center line
+    '''
+
+    # Read input parameters
+    track_width = params['track_width']
+    distance_from_center = params['distance_from_center']
+    speed = params['speed']
+    all_wheels_on_track = params['all_wheels_on_track']
+    progress = params['progress']
+    
+    # Calculate 3 markers that are at varying distances away from the center line
+    marker_1 = 0.1 * track_width
+    marker_2 = 0.25 * track_width
+    marker_3 = 0.5 * track_width
+
+    # Give a high reward if the car is inside the marker 1 boundary
+    if distance_from_center <= marker_1:
+        reward = 1.0
+    # Give a medium reward if the car is inside the marker 2 boundary
+    elif distance_from_center <= marker_2:
+        reward = 0.5
+    # Give a low reward if the car is inside the marker 3 boundary
+    elif distance_from_center <= marker_3:
+        reward = 0.1
+    # The car is out of bounds
+    else:
+        reward = 1e-3  # likely crashed/ close to off track
+
+    # Penalize if the car goes off track
+    if not all_wheels_on_track:
+        reward = 1e-3
+
+    # Reward for speed, but not too high to prevent it from going off track
+    SPEED_THRESHOLD = 3.0
+    if speed < SPEED_THRESHOLD:
+        reward += speed / SPEED_THRESHOLD
+    else:
+        reward += 1.0
+
+    # Reward for progress
+    reward += progress / 100.0
+
+    return float(reward)
