@@ -1,1 +1,39 @@
 
+@echo off
+REM Disable warnings (similar to disabling urllib3 warnings in Python)
+setlocal enabledelayedexpansion
+
+REM Define variables for inputs
+set AWS_ACCOUNT_ID=%1
+set AWS_ROLE=%2
+set AD_ROLE_NAME=%3
+set USERNAME=%4
+set PASSWORD=%5
+set URL=https://your.api.endpoint/creds-provider/provide-credentials/aws:iam::%AWS_ACCOUNT_ID%:role/%AWS_ROLE%/%AD_ROLE_NAME%
+
+REM Debugging - echo the URL
+echo Making request to: %URL%
+
+REM Make API call using curl
+curl -k -u %USERNAME%:%PASSWORD% -X GET "%URL%" -o response.json
+
+REM Check if response.json exists
+if exist response.json (
+    echo API response received.
+
+    REM Read the "credentials" section from JSON
+    for /f "tokens=*" %%i in ('type response.json') do (
+        set line=%%i
+        if "!line!"=="Version" (
+            echo Found credentials: !line!
+        )
+    )
+
+    REM Print the entire response
+    type response.json
+) else (
+    echo Failed to fetch the credentials.
+)
+
+REM Pause to keep the window open
+pause
