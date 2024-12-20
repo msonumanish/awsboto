@@ -1,1 +1,34 @@
 
+# Input parameters
+param (
+    [string]$AWSAccountID,
+    [string]$AWSRole,
+    [string]$ADRoleName,
+    [string]$Username,
+    [string]$Password
+)
+
+# API endpoint
+$URL = "https://your.api.endpoint/creds-provider/provide-credentials/aws:iam::$AWSAccountID:role/$AWSRole/$ADRoleName"
+
+# Disable SSL validation (similar to disabling urllib3 warnings)
+[System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+
+# Make the API call
+try {
+    $Response = Invoke-RestMethod -Uri $URL -Method Get -Credential (New-Object System.Management.Automation.PSCredential($Username, (ConvertTo-SecureString $Password -AsPlainText -Force))) -ErrorAction Stop
+} catch {
+    Write-Host "Failed to fetch credentials. Error: $_" -ForegroundColor Red
+    exit 1
+}
+
+# Extract the 'credentials' key from the response
+if ($Response -and $Response.credentials) {
+    $Credentials = $Response.credentials
+    Write-Host "Extracted Credentials: $($Credentials | ConvertTo-Json -Depth 10)" -ForegroundColor Green
+} else {
+    Write-Host "The response did not contain 'credentials'." -ForegroundColor Yellow
+}
+
+# Pause the script to view output (for debugging)
+Read-Host "Press Enter to exit"
