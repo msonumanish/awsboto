@@ -1,7 +1,5 @@
 import csv
 
-import csv
-
 def copy_csv_with_new_fields(input_csv, output_csv, new_fields):
     """
     Creates a copy of the CSV file with additional new columns but without modifying values.
@@ -19,9 +17,15 @@ def copy_csv_with_new_fields(input_csv, output_csv, new_fields):
 
     print(f"CSV copied with new fields: {output_csv}")
 
-def update_csv_field(csv_file, search_key, search_value, update_field, update_value):
+def update_csv_fields(csv_file, search_criteria, updates):
     """
-    Searches for a specific row based on 'search_key' and updates 'update_field' with 'update_value'.
+    Searches for rows based on multiple criteria (site_name, domain, function_goup)
+    and updates multiple fields (Status, Remarks).
+    
+    Parameters:
+    - csv_file: CSV file to update.
+    - search_criteria: Dictionary containing `site_name`, `domain`, `function_goup`.
+    - updates: Dictionary containing fields to update (e.g., {"Status": "Passed", "Remarks": "Checked"}).
     """
     updated_rows = []
 
@@ -30,88 +34,42 @@ def update_csv_field(csv_file, search_key, search_value, update_field, update_va
         fieldnames = reader.fieldnames
 
         for row in reader:
-            if row[search_key] == search_value:  # Match row for update
-                row[update_field] = update_value
+            # Check if the row matches all search criteria
+            if (row["site_name"] == search_criteria["site_name"] and
+                row["domain"] == search_criteria["domain"] and
+                row["function_goup"] == search_criteria["function_goup"]):
+                
+                # Apply updates (e.g., update Status and Remarks)
+                for field, value in updates.items():
+                    row[field] = value
+
             updated_rows.append(row)
 
+    # Write the updated data back to the CSV
     with open(csv_file, mode="w", newline="") as file:
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(updated_rows)
 
-    print(f"CSV updated: {update_field} set to '{update_value}' where {search_key}='{search_value}'.")
+    print(f"CSV updated for criteria {search_criteria}: {updates}")
 
 # === Usage ===
 input_csv = "data.csv"   # Replace with actual input CSV file
 output_csv = "updated_data.csv"  # Output file with new columns
-new_fields = ["Status"]  # Additional columns to be added
+new_fields = ["Status", "Remarks"]  # Additional columns to be added
 
 # Step 1: Create a copy of the CSV with new fields
 copy_csv_with_new_fields(input_csv, output_csv, new_fields)
 
-# Step 2: Update a specific row in the copied CSV
-update_csv_field(output_csv, "site_name", "A", "Status", "Passed")  # Example: Mark all 'A' as Passed
+# Step 2: Update specific row based on multiple search criteria
+update_csv_fields(
+    output_csv,
+    search_criteria={"site_name": "A", "domain": "client", "function_goup": "func2"},
+    updates={"Status": "Passed", "Remarks": "Verified by team"}
+)
 
-
-
-def copy_csv_with_new_fields(input_csv, output_csv, new_fields):
-    """Creates a copy of the input CSV with additional new columns."""
-    with open(input_csv, mode="r", newline="") as infile, open(output_csv, mode="w", newline="") as outfile:
-        reader = csv.DictReader(infile)
-        fieldnames = reader.fieldnames + new_fields  # Add new fields to header
-        writer = csv.DictWriter(outfile, fieldnames=fieldnames)
-        
-        writer.writeheader()
-        data = [row for row in reader]  # Store all rows for processing
-        writer.writerows(data)  # Write initial data (without modifications)
-    
-    return output_csv  # Return the new CSV file path
-
-def find_and_update_rows(csv_file, site_name, update_logic):
-    """Searches for rows matching a site_name and updates new fields using custom logic."""
-    updated_rows = []
-    
-    with open(csv_file, mode="r", newline="") as file:
-        reader = csv.DictReader(file)
-        fieldnames = reader.fieldnames
-
-        for row in reader:
-            if row["site_name"] == site_name:
-                row.update(update_logic(row))  # Apply custom logic to update fields
-            updated_rows.append(row)
-
-    return updated_rows, fieldnames
-
-def write_updated_csv(csv_file, updated_rows, fieldnames):
-    """Writes updated rows to the CSV file."""
-    with open(csv_file, mode="w", newline="") as file:
-        writer = csv.DictWriter(file, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(updated_rows)
-
-# === Usage ===
-
-input_csv = "data.csv"  # Replace with actual input CSV file
-output_csv = "updated_data.csv"  # Output file with new columns
-new_fields = ["Status", "Remarks"]  # Fields to be added
-
-# Step 1: Copy CSV with new fields
-copy_csv_with_new_fields(input_csv, output_csv, new_fields)
-
-# Step 2: Define update logic
-def update_logic(row):
-    """Custom logic for updating new fields based on conditions."""
-    if row["domain"] == "client":
-        return {"Status": "Passed", "Remarks": "Client domain verified"}
-    elif row["domain"] == "intranet":
-        return {"Status": "Failed", "Remarks": "Intranet domain issue"}
-    else:
-        return {"Status": "Unknown", "Remarks": "Uncategorized"}
-
-# Step 3: Find & update rows
-updated_rows, fieldnames = find_and_update_rows(output_csv, "A", update_logic)
-
-# Step 4: Write the modified data back to CSV
-write_updated_csv(output_csv, updated_rows, fieldnames)
-
-print(f"Updated CSV saved as {output_csv}")
+update_csv_fields(
+    output_csv,
+    search_criteria={"site_name": "A", "domain": "intanet", "function_goup": "func3"},
+    updates={"Status": "Failed", "Remarks": "Issue detected"}
+)
