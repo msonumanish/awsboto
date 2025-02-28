@@ -1,0 +1,63 @@
+import csv
+
+def copy_csv_with_new_fields(input_csv, output_csv, new_fields):
+    """Creates a copy of the input CSV with additional new columns."""
+    with open(input_csv, mode="r", newline="") as infile, open(output_csv, mode="w", newline="") as outfile:
+        reader = csv.DictReader(infile)
+        fieldnames = reader.fieldnames + new_fields  # Add new fields to header
+        writer = csv.DictWriter(outfile, fieldnames=fieldnames)
+        
+        writer.writeheader()
+        data = [row for row in reader]  # Store all rows for processing
+        writer.writerows(data)  # Write initial data (without modifications)
+    
+    return output_csv  # Return the new CSV file path
+
+def find_and_update_rows(csv_file, site_name, update_logic):
+    """Searches for rows matching a site_name and updates new fields using custom logic."""
+    updated_rows = []
+    
+    with open(csv_file, mode="r", newline="") as file:
+        reader = csv.DictReader(file)
+        fieldnames = reader.fieldnames
+
+        for row in reader:
+            if row["site_name"] == site_name:
+                row.update(update_logic(row))  # Apply custom logic to update fields
+            updated_rows.append(row)
+
+    return updated_rows, fieldnames
+
+def write_updated_csv(csv_file, updated_rows, fieldnames):
+    """Writes updated rows to the CSV file."""
+    with open(csv_file, mode="w", newline="") as file:
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(updated_rows)
+
+# === Usage ===
+
+input_csv = "data.csv"  # Replace with actual input CSV file
+output_csv = "updated_data.csv"  # Output file with new columns
+new_fields = ["Status", "Remarks"]  # Fields to be added
+
+# Step 1: Copy CSV with new fields
+copy_csv_with_new_fields(input_csv, output_csv, new_fields)
+
+# Step 2: Define update logic
+def update_logic(row):
+    """Custom logic for updating new fields based on conditions."""
+    if row["domain"] == "client":
+        return {"Status": "Passed", "Remarks": "Client domain verified"}
+    elif row["domain"] == "intranet":
+        return {"Status": "Failed", "Remarks": "Intranet domain issue"}
+    else:
+        return {"Status": "Unknown", "Remarks": "Uncategorized"}
+
+# Step 3: Find & update rows
+updated_rows, fieldnames = find_and_update_rows(output_csv, "A", update_logic)
+
+# Step 4: Write the modified data back to CSV
+write_updated_csv(output_csv, updated_rows, fieldnames)
+
+print(f"Updated CSV saved as {output_csv}")
