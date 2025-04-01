@@ -1,0 +1,40 @@
+from ldap3 import Server, Connection, ALL
+from datetime import datetime
+
+def get_ad_group_info(server_address, user_dn, password, group_dn):
+    try:
+        # Connect to the AD server
+        server = Server(server_address, get_info=ALL)
+        conn = Connection(server, user=user_dn, password=password, auto_bind=True)
+        
+        # Search for the group
+        conn.search(group_dn, '(objectClass=group)', attributes=['member', 'whenCreated'])
+        
+        if conn.entries:
+            group_entry = conn.entries[0]
+            
+            # Get the number of users
+            members = group_entry.member.values if 'member' in group_entry else []
+            user_count = len(members)
+            
+            # Get the creation date
+            created_date = group_entry.whenCreated.value if 'whenCreated' in group_entry else 'Unknown'
+            
+            return {
+                'user_count': user_count,
+                'created_date': created_date.strftime('%Y-%m-%d %H:%M:%S') if isinstance(created_date, datetime) else created_date
+            }
+        else:
+            return {'error': 'Group not found'}
+    
+    except Exception as e:
+        return {'error': str(e)}
+
+# Example Usage
+server_address = 'ldap://your-ad-server.com'
+user_dn = 'CN=YourUser,CN=Users,DC=yourdomain,DC=com'
+password = 'YourPassword'
+group_dn = 'CN=YourGroup,CN=Users,DC=yourdomain,DC=com'
+
+result = get_ad_group_info(server_address, user_dn, password, group_dn)
+print(result)
