@@ -1,0 +1,84 @@
+resource "azurerm_resource_group" "res-0" {
+  location = "uksouth"
+  name     = "bi-poc"
+}
+resource "azurerm_key_vault" "res-1" {
+  enable_rbac_authorization       = true
+  enabled_for_deployment          = true
+  enabled_for_disk_encryption     = true
+  enabled_for_template_deployment = true
+  location                        = "uksouth"
+  name                            = "pbicentral"
+  purge_protection_enabled        = true
+  resource_group_name             = "bi-poc"
+  sku_name                        = "standard"
+  tenant_id                       = "12a7deee-3d43-4fc0-8d03-d374a7137672"
+  depends_on = [
+    azurerm_resource_group.res-0,
+  ]
+}
+resource "azurerm_key_vault_key" "res-2" {
+  key_opts     = ["sign", "verify", "wrapKey", "unwrapKey", "encrypt", "decrypt"]
+  key_size     = 4096
+  key_type     = "RSA"
+  key_vault_id = "/subscriptions/a1a41d72-8abf-498b-99e2-688dd196b847/resourceGroups/bi-poc/providers/Microsoft.KeyVault/vaults/pbicentral"
+  name         = "pbicentral"
+  rotation_policy {
+    expire_after         = "P365D"
+    notify_before_expiry = "P30D"
+    automatic {
+      time_after_creation = "P1M"
+    }
+  }
+  depends_on = [
+    azurerm_key_vault.res-1,
+  ]
+}
+resource "azurerm_user_assigned_identity" "res-3" {
+  location            = "uksouth"
+  name                = "pbi_identity"
+  resource_group_name = "bi-poc"
+  depends_on = [
+    azurerm_resource_group.res-0,
+  ]
+}
+resource "azurerm_storage_account" "res-4" {
+  account_replication_type          = "RAGRS"
+  account_tier                      = "Standard"
+  allow_nested_items_to_be_public   = false
+  allowed_copy_scope                = "PrivateLink"
+  infrastructure_encryption_enabled = true
+  location                          = "uksouth"
+  name                              = "pbicentral1510"
+  public_network_access_enabled     = false
+  queue_encryption_key_type         = "Account"
+  resource_group_name               = "bi-poc"
+  table_encryption_key_type         = "Account"
+  customer_managed_key {
+    key_vault_key_id          = "https://pbicentral.vault.azure.net/keys/pbicentral/c6bbec048a4349b387cd035d471abb87"
+    user_assigned_identity_id = "/subscriptions/a1a41d72-8abf-498b-99e2-688dd196b847/resourceGroups/bi-poc/providers/Microsoft.ManagedIdentity/userAssignedIdentities/pbi_identity"
+  }
+  identity {
+    identity_ids = ["/subscriptions/a1a41d72-8abf-498b-99e2-688dd196b847/resourceGroups/bi-poc/providers/Microsoft.ManagedIdentity/userAssignedIdentities/pbi_identity"]
+    type         = "UserAssigned"
+  }
+  depends_on = [
+    azurerm_key_vault_key.res-2,
+    azurerm_user_assigned_identity.res-3,
+  ]
+}
+resource "azurerm_storage_account_queue_properties" "res-7" {
+  storage_account_id = "/subscriptions/a1a41d72-8abf-498b-99e2-688dd196b847/resourceGroups/bi-poc/providers/Microsoft.Storage/storageAccounts/pbicentral1510"
+  hour_metrics {
+    version = "1.0"
+  }
+  logging {
+    version = "1.0"
+  }
+  minute_metrics {
+    version = "1.0"
+  }
+  depends_on = [
+    azurerm_storage_account.res-4,
+  ]
+}
