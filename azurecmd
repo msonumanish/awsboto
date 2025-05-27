@@ -1,0 +1,1 @@
+az network nic list --query "[?ipConfigurations[?subnet.id=='/subscriptions/<sub-id>/resourceGroups/<rg-name>/providers/Microsoft.Network/virtualNetworks/<vnet-name>/subnets/<subnet-name>']].ipConfigurations[].privateIPAddress" -o table
