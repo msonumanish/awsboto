@@ -3,3 +3,11 @@ az network nic list --query "[?ipConfigurations[?subnet.id=='/subscriptions/<sub
 
 azcopy login --service-principal --application-id <client_id> --tenant-id <tenant_id> --client-secret <secret>
 azcopy copy "./file.txt" "https://mystorage.blob.core.windows.net/mycontainer/file.txt"
+
+
+az storage blob upload \
+  --account-name mystorageaccount \
+  --container-name mycontainer \
+  --name myfile.txt \
+  --file ./myfile.txt \
+  --auth-mode login
