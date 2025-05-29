@@ -17,3 +17,14 @@ az login --service-principal \
   --username "12345678-aaaa-bbbb-cccc-123456789abc" \
   --password "your-client-secret-here" \
   --tenant "87654321-dddd-eeee-ffff-abcdefabcdef"
+
+
+azcopy login --service-principal \
+  --application-id <client-id> \
+  --tenant-id <tenant-id> \
+  --client-secret <client-secret>
+
+
+
+
+azcopy copy "/local/path/to/file.txt" "https://<storage-account>.blob.core.windows.net/<container-name>/file.txt"
