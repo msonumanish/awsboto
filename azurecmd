@@ -11,3 +11,9 @@ az storage blob upload \
   --name myfile.txt \
   --file ./myfile.txt \
   --auth-mode login
+
+
+az login --service-principal \
+  --username "12345678-aaaa-bbbb-cccc-123456789abc" \
+  --password "your-client-secret-here" \
+  --tenant "87654321-dddd-eeee-ffff-abcdefabcdef"
