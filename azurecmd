@@ -1,1 +1,5 @@
 az network nic list --query "[?ipConfigurations[?subnet.id=='/subscriptions/<sub-id>/resourceGroups/<rg-name>/providers/Microsoft.Network/virtualNetworks/<vnet-name>/subnets/<subnet-name>']].ipConfigurations[].privateIPAddress" -o table
+
+
+azcopy login --service-principal --application-id <client_id> --tenant-id <tenant_id> --client-secret <secret>
+azcopy copy "./file.txt" "https://mystorage.blob.core.windows.net/mycontainer/file.txt"
